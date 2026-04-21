@@ -191,7 +191,7 @@ async function getWeatherData() {
 }
 
 // 导出函数
-module.exports = { getWeatherData };
+module.exports = getWeatherData;
 
 
 
