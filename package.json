@@ -1,0 +1,13 @@
+{
+  "name": "weather-alert-system",
+  "version": "1.0.0",
+  "description": "Automated weather alert system for Qufu",
+  "main": "weather_alert.js",
+  "scripts": {
+    "start": "node main.js",
+    "alert": "node weather_alert.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

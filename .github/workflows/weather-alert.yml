@@ -1,0 +1,30 @@
+name: Weather Alert
+
+on:
+  schedule:
+    # 每天早上7:00运行
+    - cron: '0 23 * * *'  # UTC时间，对应北京时间7:00
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  weather-alert:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Run weather alert
+      run: node weather_alert.js
+      env:
+        DD_BOT_TOKEN: ${{ secrets.DD_BOT_TOKEN }}
+        DD_BOT_SECRET: ${{ secrets.DD_BOT_SECRET }}
