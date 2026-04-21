@@ -68,62 +68,155 @@ function generateWeatherMessage(weatherData) {
   
   let message = `# 曲阜地区天气提醒\n\n`;
   
+  // 天气概览卡片
+  message += `## 🌤️ 天气概览\n\n`;
+  
   // 今天的天气
-  message += `## 今天 (${today.date})\n`;
-  message += `- 天气状况: ${today.condition}\n`;
-  message += `- 温度: ${today.tempLo}°C ~ ${today.tempHi}°C\n`;
-  message += `- 体感温度: ${today.feelsLo}°C ~ ${today.feelsHi}°C\n`;
-  message += `- 降水概率: ${today.precip}%\n`;
-  message += `- 降水量: ${today.rainAmount}mm\n`;
-  message += `- 风速风向: ${today.windSpeed} ${today.windDir}\n`;
-  message += `- 日出日落: ${today.sunrise} ~ ${today.sunset}\n\n`;
+  message += `### 📅 今天 (${today.date})\n`;
+  message += `| 项目 | 详情 |\n`;
+  message += `|------|------|\n`;
+  message += `| 天气状况 | ${today.condition} |\n`;
+  message += `| 温度范围 | ${today.tempLo}°C ~ ${today.tempHi}°C |\n`;
+  message += `| 体感温度 | ${today.feelsLo}°C ~ ${today.feelsHi}°C |\n`;
+  message += `| 降水概率 | ${today.precip}% |\n`;
+  message += `| 降水量 | ${today.rainAmount}mm |\n`;
+  message += `| 风速风向 | ${today.windSpeed} ${today.windDir} |\n`;
+  message += `| 日出日落 | ${today.sunrise} ~ ${today.sunset} |\n\n`;
   
   // 明天的天气
   if (tomorrow) {
-    message += `## 明天 (${tomorrow.date})\n`;
-    message += `- 天气状况: ${tomorrow.condition}\n`;
-    message += `- 温度: ${tomorrow.tempLo}°C ~ ${tomorrow.tempHi}°C\n`;
-    message += `- 体感温度: ${tomorrow.feelsLo}°C ~ ${tomorrow.feelsHi}°C\n`;
-    message += `- 降水概率: ${tomorrow.precip}%\n`;
-    message += `- 降水量: ${tomorrow.rainAmount}mm\n`;
-    message += `- 风速风向: ${tomorrow.windSpeed} ${tomorrow.windDir}\n`;
-    message += `- 日出日落: ${tomorrow.sunrise} ~ ${tomorrow.sunset}\n\n`;
+    message += `### 📅 明天 (${tomorrow.date})\n`;
+    message += `| 项目 | 详情 |\n`;
+    message += `|------|------|\n`;
+    message += `| 天气状况 | ${tomorrow.condition} |\n`;
+    message += `| 温度范围 | ${tomorrow.tempLo}°C ~ ${tomorrow.tempHi}°C |\n`;
+    message += `| 体感温度 | ${tomorrow.feelsLo}°C ~ ${tomorrow.feelsHi}°C |\n`;
+    message += `| 降水概率 | ${tomorrow.precip}% |\n`;
+    message += `| 降水量 | ${tomorrow.rainAmount}mm |\n`;
+    message += `| 风速风向 | ${tomorrow.windSpeed} ${tomorrow.windDir} |\n`;
+    message += `| 日出日落 | ${tomorrow.sunrise} ~ ${tomorrow.sunset} |\n\n`;
   }
   
+  // 气温趋势图（使用ASCII图表）
+  message += `## 🌡️ 气温趋势\n\n`;
+  message += `\`\`\`\n`;
+  message += `        今天          明天\n`;
+  message += `        ${today.tempLo}°C      ${tomorrow ? tomorrow.tempLo : '--'}°C\n`;
+  message += `        ▼            ▼\n`;
+  message += `        ${today.tempHi}°C      ${tomorrow ? tomorrow.tempHi : '--'}°C\n`;
+  message += `        ▲            ▲\n`;
+  message += `\`\`\`\n\n`;
+  
   // 降水预警
-  message += `## 降水预警\n`;
+  message += `## 💧 降水预警\n\n`;
   
   // 今天的每小时降水数据
   if (weatherData.hourlyPrecipData && weatherData.hourlyPrecipData.today) {
-    const todayPrecipData = weatherData.hourlyPrecipData.today.filter(item => item.precip > 0);
+    const todayPrecipData = weatherData.hourlyPrecipData.today;
     if (todayPrecipData.length > 0) {
-      message += `### 今天降水时段\n`;
-      todayPrecipData.forEach(item => {
-        message += `- ${item.hour}:00: 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
-      });
+      message += `### 📊 今天每小时降水概率\n`;
+      message += `\`\`\`\n`;
+      
+      // 生成ASCII降水概率图表
+      message += `小时:  0  2  4  6  8 10 12 14 16 18 20 22\n`;
+      message += `概率: `;
+      
+      for (let hour = 0; hour < 24; hour += 2) {
+        const hourData = todayPrecipData.find(item => item.hour === hour);
+        const precip = hourData ? hourData.precip : 0;
+        
+        // 生成降水概率条形图
+        let bar = '';
+        for (let i = 0; i < Math.min(precip, 100); i += 10) {
+          bar += '█';
+        }
+        
+        // 确保每个小时的条形图宽度一致
+        while (bar.length < 10) {
+          bar += ' ';
+        }
+        
+        message += bar + ' ';
+      }
+      
+      message += `\n\`\`\`\n`;
+      
+      // 详细降水数据
+      message += `### 今天降水时段详情\n`;
+      const significantPrecip = todayPrecipData.filter(item => item.precip > 20);
+      if (significantPrecip.length > 0) {
+        significantPrecip.forEach(item => {
+          message += `- ${item.hour}:00: 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
+        });
+      } else {
+        message += `- 今天无明显降水\n`;
+      }
       message += `\n`;
     }
   }
   
   // 明天的每小时降水数据
   if (weatherData.hourlyPrecipData && weatherData.hourlyPrecipData.tomorrow) {
-    const tomorrowPrecipData = weatherData.hourlyPrecipData.tomorrow.filter(item => item.precip > 0);
+    const tomorrowPrecipData = weatherData.hourlyPrecipData.tomorrow;
     if (tomorrowPrecipData.length > 0) {
-      message += `### 明天降水时段\n`;
-      tomorrowPrecipData.forEach(item => {
-        message += `- ${item.hour}:00: 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
-      });
+      message += `### 📊 明天每小时降水概率\n`;
+      message += `\`\`\`\n`;
+      
+      // 生成ASCII降水概率图表
+      message += `小时:  0  2  4  6  8 10 12 14 16 18 20 22\n`;
+      message += `概率: `;
+      
+      for (let hour = 0; hour < 24; hour += 2) {
+        const hourData = tomorrowPrecipData.find(item => item.hour === hour);
+        const precip = hourData ? hourData.precip : 0;
+        
+        // 生成降水概率条形图
+        let bar = '';
+        for (let i = 0; i < Math.min(precip, 100); i += 10) {
+          bar += '█';
+        }
+        
+        // 确保每个小时的条形图宽度一致
+        while (bar.length < 10) {
+          bar += ' ';
+        }
+        
+        message += bar + ' ';
+      }
+      
+      message += `\n\`\`\`\n`;
+      
+      // 详细降水数据
+      message += `### 明天降水时段详情\n`;
+      const significantPrecip = tomorrowPrecipData.filter(item => item.precip > 20);
+      if (significantPrecip.length > 0) {
+        significantPrecip.forEach(item => {
+          message += `- ${item.hour}:00: 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
+        });
+      } else {
+        message += `- 明天无明显降水\n`;
+      }
     }
   }
   
   // 特别提醒
+  message += `## ⚠️ 预警信息\n\n`;
+  
   if (today.precip > 50) {
-    message += `\n> **⚠️ 预警：今天降水概率较高，请携带雨具**\n`;
+    message += `> **🔴 暴雨预警：今天降水概率 ${today.precip}%，请携带雨具，注意出行安全！**\n\n`;
+  } else if (today.precip > 30) {
+    message += `> **🟡 小雨预警：今天降水概率 ${today.precip}%，建议携带雨具**\n\n`;
   }
   
   if (tomorrow && tomorrow.precip > 50) {
-    message += `\n> **⚠️ 预警：明天降水概率较高，请携带雨具**\n`;
+    message += `> **🔴 暴雨预警：明天降水概率 ${tomorrow.precip}%，请携带雨具，注意出行安全！**\n\n`;
+  } else if (tomorrow && tomorrow.precip > 30) {
+    message += `> **🟡 小雨预警：明天降水概率 ${tomorrow.precip}%，建议携带雨具**\n\n`;
   }
+  
+  // 结束语
+  message += `## 📅 更新时间\n`;
+  message += `> ${new Date().toLocaleString('zh-CN')}`;
   
   return message;
 }
