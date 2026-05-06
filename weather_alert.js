@@ -3,13 +3,13 @@ const axios = require('axios');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const config = require('./config');
 
 // 钉钉机器人配置
-const DD_BOT_TOKEN = process.env.DD_BOT_TOKEN || 'c443d4b28d91876cb0d2a36e405b44c525e701e178f41445f09a468f4d453d4f';
-const DD_BOT_SECRET = process.env.DD_BOT_SECRET || 'SEC991410be16a0e7156b6a015880d69768df8684a3be80bcd516c872eec032914e';
+const { token: DD_BOT_TOKEN, secret: DD_BOT_SECRET } = config.dingtalk;
 
 // 日志文件路径
-const LOG_FILE = path.join(__dirname, 'weather_alert.log');
+const LOG_FILE = path.join(__dirname, config.log.file);
 
 // 日志记录函数
 function log(message) {
@@ -113,47 +113,73 @@ function generateWeatherMessage(weatherData) {
   // 气温趋势图（使用ASCII图表）
   message += `## 🌡️ 气温趋势\n\n`;
   message += `\`\`\`\n`;
-  message += `       今早    明早\n`;
-  message += `       ${today.tempLo}°C    ${tomorrow ? tomorrow.tempLo : '--'}°C\n`;
-  message += `        ↓        ↓\n`;
-  message += `       ${today.tempHi}°C    ${tomorrow ? tomorrow.tempHi : '--'}°C\n`;
-  message += `        ↑        ↑\n`;
+  message += `       今  天      明  天\n`;
+  message += `    ┌───────────┐┌───────────┐\n`;
+  message += `最高│${today.tempHi.toString().padStart(4)}°C    ││${(tomorrow ? tomorrow.tempHi : '--').toString().padStart(4)}°C    │\n`;
+  message += `    │           ││           │\n`;
+  message += `    │     🌞    ││     🌤️    │\n`;
+  message += `    │           ││           │\n`;
+  message += `最低│${today.tempLo.toString().padStart(4)}°C    ││${(tomorrow ? tomorrow.tempLo : '--').toString().padStart(4)}°C    │\n`;
+  message += `    └───────────┘└───────────┘\n`;
   message += `\`\`\`\n\n`;
 
   // 降水预警
   message += `## 💧 降水预警\n\n`;
 
+  function generatePrecipChart(precipData, title) {
+    let chart = `### 📊 ${title}每小时降水概率\n\n`;
+    
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const maxPrecip = Math.max(...precipData.map(item => item.precip || 0), 100);
+    
+    chart += `\`\`\`\n`;
+    chart += `     降水概率 (%)\n`;
+    chart += `    100 ┼\n`;
+    chart += `     80 ┼${getBarLine(precipData, hours, 80)}\n`;
+    chart += `     60 ┼${getBarLine(precipData, hours, 60)}\n`;
+    chart += `     40 ┼${getBarLine(precipData, hours, 40)}\n`;
+    chart += `     20 ┼${getBarLine(precipData, hours, 20)}\n`;
+    chart += `      0 ┼${getBarLine(precipData, hours, 0)}\n`;
+    chart += `         ┼────────────────────────────────────────\n`;
+    chart += `         0  3  6  9 12 15 18 21 时间 (时)\n`;
+    chart += `\`\`\`\n`;
+    
+    const significantPrecip = precipData.filter(item => item.precip > 20);
+    if (significantPrecip.length > 0) {
+      chart += `> 主要降水时段:\n`;
+      significantPrecip.forEach(item => {
+        const icon = item.precip >= 70 ? '🔴' : (item.precip >= 50 ? '🟠' : '🟡');
+        chart += `> ${icon} ${item.hour.toString().padStart(2, '0')}:00 - 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
+      });
+    } else {
+      chart += `> ${title}无明显降水\n`;
+    }
+    chart += `\n`;
+    
+    return chart;
+  }
+  
+  function getBarLine(precipData, hours, threshold) {
+    let line = '';
+    for (let i = 0; i < hours.length; i += 3) {
+      const hourData = precipData.find(item => item.hour === hours[i]);
+      const precip = hourData ? hourData.precip : 0;
+      if (precip > threshold) {
+        line += ' █';
+      } else if (precip === threshold) {
+        line += ' ■';
+      } else {
+        line += '  ';
+      }
+    }
+    return line;
+  }
+
   // 今天的每小时降水数据
   if (weatherData.hourlyPrecipData && weatherData.hourlyPrecipData.today) {
     const todayPrecipData = weatherData.hourlyPrecipData.today;
     if (todayPrecipData.length > 0) {
-      message += `### 📊 今天每小时降水概率\n\n`;
-
-      // 生成ASCII降水概率图表（改进版，每列固定宽度）
-      message += `时间:  0  2  4  6  8 10 12 14 16 18 20 22\n`;
-      message += `\`\`\`\n`;
-      message += `降水: `;
-
-      for (let hour = 0; hour < 24; hour += 2) {
-        const hourData = todayPrecipData.find(item => item.hour === hour);
-        const precip = hourData ? hourData.precip : 0;
-        const barLen = Math.floor(precip / 10);
-        message += '█'.repeat(barLen).padEnd(10, ' ');
-      }
-      message += `\n\`\`\`\n`;
-
-      // 详细降水数据
-      const significantPrecip = todayPrecipData.filter(item => item.precip > 20);
-      if (significantPrecip.length > 0) {
-        message += `> 今天主要降水时段:\n`;
-        significantPrecip.forEach(item => {
-          const icon = item.precip >= 70 ? '🔴' : (item.precip >= 50 ? '🟠' : '🟡');
-          message += `> ${icon} ${item.hour}:00 - 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
-        });
-      } else {
-        message += `> 今天无明显降水\n`;
-      }
-      message += `\n`;
+      message += generatePrecipChart(todayPrecipData, '今天');
     }
   }
 
@@ -161,32 +187,7 @@ function generateWeatherMessage(weatherData) {
   if (weatherData.hourlyPrecipData && weatherData.hourlyPrecipData.tomorrow) {
     const tomorrowPrecipData = weatherData.hourlyPrecipData.tomorrow;
     if (tomorrowPrecipData.length > 0) {
-      message += `### 📊 明天每小时降水概率\n\n`;
-
-      // 生成ASCII降水概率图表（改进版，每列固定宽度）
-      message += `时间:  0  2  4  6  8 10 12 14 16 18 20 22\n`;
-      message += `\`\`\`\n`;
-      message += `降水: `;
-
-      for (let hour = 0; hour < 24; hour += 2) {
-        const hourData = tomorrowPrecipData.find(item => item.hour === hour);
-        const precip = hourData ? hourData.precip : 0;
-        const barLen = Math.floor(precip / 10);
-        message += '█'.repeat(barLen).padEnd(10, ' ');
-      }
-      message += `\n\`\`\`\n`;
-
-      // 详细降水数据
-      const significantPrecip = tomorrowPrecipData.filter(item => item.precip > 20);
-      if (significantPrecip.length > 0) {
-        message += `> 明天主要降水时段:\n`;
-        significantPrecip.forEach(item => {
-          const icon = item.precip >= 70 ? '🔴' : (item.precip >= 50 ? '🟠' : '🟡');
-          message += `> ${icon} ${item.hour}:00 - 降水概率 ${item.precip}%, 降水量 ${item.rainAmount}mm\n`;
-        });
-      } else {
-        message += `> 明天无明显降水\n`;
-      }
+      message += generatePrecipChart(tomorrowPrecipData, '明天');
     }
   }
 

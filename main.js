@@ -1,55 +1,9 @@
 const axios = require('axios');
+const config = require('./config');
 
 async function getWeatherData() {
   try {
-    const url = 'https://assets.msn.cn/service/weather/overview';
-    const params = {
-      apikey: 'j5i4gDqHL6nGYwx5wi5kRhXjtf2c5qgFX9fzfk0TOo',
-      activityId: '69e6e370-d4b6-41e4-b6d3-0503afa6afdb',
-      ocid: 'msftweather',
-      cm: 'zh-cn',
-      it: 'web',
-      user: 'm-0A31553C50CA6EB4070C427E51F16F5C',
-      scn: 'ANON',
-      units: 'C',
-      appId: '9e21380c-ff19-4c78-b4ea-19558e93a5d3',
-      wrapodata: 'false',
-      includemapsmetadata: 'true',
-      cuthour: 'true',
-      lifeDays: '2',
-      lifeModes: '18',
-      includestorm: 'true',
-      includeLifeActivity: 'true',
-      lifeSubTypes: '1,3,4,10,26',
-      insights: '65536',
-      startDate: '-1',
-      endDate: '+9',
-      discardFutureInsightTimeseries: 'true',
-      distanceinkm: '0',
-      regionDataCount: '20',
-      orderby: 'distance',
-      days: '10',
-      pageOcid: 'prime-weather::weathertoday-peregrine',
-      source: 'weather_csr',
-      fdhead: 'PRG-1SW-WXWPDEL,PRG-1SW-WXWPDS,PRG-1SW-WXWPTLI',
-      region: 'cn',
-      market: 'zh-cn',
-      locale: 'zh-cn',
-      lat: '35.6016',
-      lon: '116.9668'
-    };
-
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0',
-      'Accept': '*/*',
-      'Accept-Language': 'en-US,en;q=0.5',
-      'Referer': 'https://www.msn.cn/zh-cn/weather/forecast/in-%E6%9B%B2%E9%98%9C%E5%B8%82?loc=eyJsIjoi5puy6Zic5biCIiwiYyI6IuS4reWNjuS6uuawkeWFseWSjOWbvSIsImkiOiJDTiIsIngiOiIxMTYuOTY2OCIsInkiOiIzNS42MDE2In0%3D&weadegreetype=C',
-      'Origin': 'https://www.msn.cn',
-      'Connection': 'keep-alive',
-      'Sec-Fetch-Dest': 'empty',
-      'Sec-Fetch-Mode': 'cors',
-      'Sec-Fetch-Site': 'same-site'
-    };
+    const { url, params, headers } = config.weather;
 
     const response = await axios.get(url, { params, headers });
     const data = response.data;
