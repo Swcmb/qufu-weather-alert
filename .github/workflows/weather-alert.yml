@@ -2,8 +2,8 @@ name: Weather Alert
 
 on:
   schedule:
-    # 每天早上7:00运行
-    - cron: '0 23 * * *'  # UTC时间，对应北京时间7:00
+    # 每天早上6:50运行
+    - cron: '50 22 * * *'  # UTC时间，对应北京时间6:50
   push:
     branches: [ main ]
   pull_request:
