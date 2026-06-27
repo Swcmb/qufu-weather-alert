@@ -2,28 +2,24 @@ name: Weather Alert
 
 on:
   schedule:
-    # 每天早上7:00运行
-    - cron: '0 23 * * *'  # UTC时间，对应北京时间7:00
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    # 每天早上7:00运行（UTC 23:00 = 北京时间 07:00）
+    - cron: '0 23 * * *'
   workflow_dispatch:  # 支持手动运行
 
 jobs:
   weather-alert:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
-        node-version: '16'
-    
+        node-version: '18'
+
     - name: Install dependencies
-      run: npm install
-    
+      run: npm ci
+
     - name: Run weather alert
       run: node weather_alert.js
       env:
